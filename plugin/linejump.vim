@@ -2,6 +2,39 @@ let g:alpha_forward_list = ['0','1','2','3','4','5','6','7','8','9','a','b','c',
 let g:alpha_line_map = {'0':0,'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'a':10,'b':11,'c':12,'d':13,'e':14,'f':15,'g':16,'h':17,'i':18,'j':19,'k':20,'l':21,'m':22,'n':23,'o':24,'p':25,'q':26,'r':27,'s':28,'t':29,'u':30,'v':31,'w':32,'x':33,'y':34,'z':35,'A':36,'B':37,'C':38,'D':39,'E':40,'F':41,'G':42,'H':43,'I':44,'J':45,'K':46,'L':47,'M':48,'N':49,'O':50,'P':51,'Q':52,'R':53,'S':54,'T':55,'U':56,'V':57,'W':58,'X':59,'Y':60,'Z':61}
 "let g:linelist = []
 
+"borrow from easymotion
+let s:target_hl_defaults = {
+\   'gui'     : ['NONE', '#ff0000' , 'bold']
+\ , 'cterm256': ['NONE', '196'     , 'bold']
+\ , 'cterm'   : ['NONE', 'red'     , 'bold']
+\ }
+
+" Reset highlighting after loading a new color scheme {{{
+autocmd ColorScheme * call LineJumpLoadColor(s:target_hl_defaults)
+
+
+let g:LineJumpHiGroup = "LineJumpHiGroup"
+
+call LineJumpLoadColor(s:target_hl_defaults)
+
+"load color for linejump
+function! LineJumpLoadColor(colors)
+		" Prepare highlighting variables
+		let guihl = printf('guibg=%s guifg=%s gui=%s', a:colors.gui[0], a:colors.gui[1], a:colors.gui[2])
+		if !exists('g:CSApprox_loaded')
+			let ctermhl = &t_Co == 256
+				\ ? printf('ctermbg=%s ctermfg=%s cterm=%s', a:colors.cterm256[0], a:colors.cterm256[1], a:colors.cterm256[2])
+				\ : printf('ctermbg=%s ctermfg=%s cterm=%s', a:colors.cterm[0], a:colors.cterm[1], a:colors.cterm[2])
+		else
+			let ctermhl = ''
+		endif
+
+		" Create default highlighting group
+		execute printf('hi default %s %s %s', "LineJumpHiGroupDefault", guihl, ctermhl)
+		" No colors are defined for this group, link to defaults
+		execute printf('hi default link %s %s', g:LineJumpHiGroup, "LineJumpHiGroupDefault")
+endfunction
+
 "
 let g:line_jump_post_action = {'__Tagbar__': "normal w",'NERD_tree_\d\+':"call Linejumpfirstword()", '.*':"normal zz"}
 let g:line_jump_post_action_priority = ['__Tagbar__', 'NERD_tree_\d\+', '*']
@@ -14,6 +47,7 @@ function! Linejumpstart()
 	let old_undolevels = &undolevels
 	set undolevels=-1
 
+	let hl_coords = []
 	let startline = line("w0")
 	let endline = line("w$")
 	let g:linelist = getline(startline, endline)
@@ -24,14 +58,19 @@ function! Linejumpstart()
 		if i % 2 == 0
 			let newline = g:alpha_forward_list[i] . "  " . line
 		else
-			let newline = " " . g:alpha_forward_list[i] . " " . line
+			"let newline = " " . g:alpha_forward_list[i] . " " . line
+			let newline = g:alpha_forward_list[i] . "  " . line
 		endif
+		call add(hl_coords, '\%' . (startline+i) . 'l\%' . 1 . 'c')
 		call add(linelist_replace, newline)
 		let i += 1
 	endfor
 
 	call setline(startline, linelist_replace)
-	execute "redraw"
+
+	let target_hl_id = matchadd(g:LineJumpHiGroup, join(hl_coords, '\|'), 1)
+
+	redraw
 
 	let key = getchar()
 	let char = nr2char(key)
@@ -45,6 +84,10 @@ function! Linejumpstart()
 		call setpos('.', pos)
 	endif
 	call setline(startline, g:linelist)
+
+	if exists('target_hl_id')
+		call matchdelete(target_hl_id)
+	endif
 
 	let bufname = bufname('%')
 	echo bufname
