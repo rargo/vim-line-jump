@@ -12,10 +12,7 @@ let s:target_hl_defaults = {
 " Reset highlighting after loading a new color scheme {{{
 autocmd ColorScheme * call LineJumpLoadColor(s:target_hl_defaults)
 
-
 let s:LineJumpHiGroup = "LineJumpHiGroup"
-
-call LineJumpLoadColor(s:target_hl_defaults)
 
 "load color for linejump
 function! LineJumpLoadColor(colors)
@@ -34,6 +31,8 @@ function! LineJumpLoadColor(colors)
 		" No colors are defined for this group, link to defaults
 		execute printf('hi default link %s %s', s:LineJumpHiGroup, "LineJumpHiGroupDefault")
 endfunction
+
+call LineJumpLoadColor(s:target_hl_defaults)
 
 "
 let g:line_jump_post_action = {'__Tagbar__': "normal w",'NERD_tree_\d\+':"call Linejumpfirstword()", '.*':"normal zz"}
