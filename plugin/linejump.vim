@@ -179,12 +179,13 @@ function! LineJumpPage()
 				let s:LineJumpCharacterDict[c] = []
 			endif
 			call add(s:LineJumpCharacterDict[c],pos_list)
+			"call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
 			call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
 		endif
 		let lineindex += 1
 	endfor
 
-	let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 1)
+	let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
 
 	redraw
 
@@ -229,7 +230,7 @@ function! LineJumpPage()
 		endfor
 		echo s:alpha_forward_list
 
-		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 1)
+		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
 		redraw
 
 		"TODO handle error key 
