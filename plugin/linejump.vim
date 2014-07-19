@@ -9,13 +9,22 @@ let s:target_hl_defaults = {
 \ , 'cterm'   : ['NONE', 'red'     , 'bold']
 \ }
 
+let s:target_select_defaults = {
+\   'gui'     : ['NONE', '#0000ff' , 'bold']
+\ , 'cterm256': ['NONE', '35'     , 'bold']
+\ , 'cterm'   : ['NONE', 'green'     , 'bold']
+\ }
+
 " Reset highlighting after loading a new color scheme {{{
-autocmd ColorScheme * call LineJumpLoadColor(s:target_hl_defaults)
+autocmd ColorScheme * call LineJumpLoadColor(s:target_hl_defaults,s:LineJumpHiGroup)
+autocmd ColorScheme * call LineJumpLoadColor(s:target_select_defaults,s:LineJumpSelectGroup)
 
 let s:LineJumpHiGroup = "LineJumpHiGroup"
+let s:LineJumpSelectGroup = "LineJumpSelectGroup"
 
 "load color for linejump
-function! LineJumpLoadColor(colors)
+function! LineJumpLoadColor(colors,group)
+		let groupdefault = a:group . 'Default'
 		" Prepare highlighting variables
 		let guihl = printf('guibg=%s guifg=%s gui=%s', a:colors.gui[0], a:colors.gui[1], a:colors.gui[2])
 		if !exists('g:CSApprox_loaded')
@@ -27,12 +36,13 @@ function! LineJumpLoadColor(colors)
 		endif
 
 		" Create default highlighting group
-		execute printf('hi default %s %s %s', "LineJumpHiGroupDefault", guihl, ctermhl)
+		execute printf('hi default %s %s %s', groupdefault, guihl, ctermhl)
 		" No colors are defined for this group, link to defaults
-		execute printf('hi default link %s %s', s:LineJumpHiGroup, "LineJumpHiGroupDefault")
+		execute printf('hi default link %s %s', a:group, groupdefault)
 endfunction
 
-call LineJumpLoadColor(s:target_hl_defaults)
+call LineJumpLoadColor(s:target_select_defaults,s:LineJumpSelectGroup)
+call LineJumpLoadColor(s:target_hl_defaults,s:LineJumpHiGroup)
 
 "
 let g:line_jump_post_action = {'__Tagbar__': "normal w",'NERD_tree_\d\+':"call Linejumpfirstword()", '.*':"normal zz"}
@@ -156,14 +166,13 @@ endfunction
 "select
 "	0: select by press number and alpha
 "	1: select by "j,k,h,l,m"
-let g:LineJumpSelectMethod = 0
+let g:LineJumpSelectMethod = 1
 
 let s:LineJumpCharacterDict = {}
-function! LineJumpSelectMethodByMotion(matchlinelist, startline)
+function! LineJumpSelectMethodByMotion(matchlinelist)
 		let hl_coords = []
 		for mline in a:matchlinelist
 			call add(hl_coords, '\%' . mline[0] . 'l\%' . (mline[1]+1) . 'c')
-			let ki += 1
 		endfor
 
 		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
@@ -176,16 +185,20 @@ function! LineJumpSelectMethodByMotion(matchlinelist, startline)
 		let newpos[1] = a:matchlinelist[current_index][0] "line number
 		let newpos[2] = a:matchlinelist[current_index][1] + 1 "column number
 		call setpos('.', newpos)
+		let select_coord = []
+		call add(select_coord, '\%' . newpos[1] . 'l\%' . newpos[2] . 'c')
+		let target_select_id = matchadd(s:LineJumpSelectGroup, join(select_coord, '\|'), 200)
+		redraw
 		while 9
 			let key = getchar()
 			let char = nr2char(key)
-			if char == 'i'
+			if char == 'j'
 				let  current_index += 1
 				if current_index > max_index
 					let current_index = 0
 				endif
-			elseif char == 'j'
-				let  current_index += 1
+			elseif char == 'k'
+				let  current_index -= 1
 				if current_index < 0
 					let current_index = max_index
 				endif
@@ -196,28 +209,39 @@ function! LineJumpSelectMethodByMotion(matchlinelist, startline)
 			elseif char == 'h'
 				let  current_index = 0
 			else
-				break;
+				break
 			endif
 			let newpos = getpos('.')
 			let newpos[1] = a:matchlinelist[current_index][0] "line number
 			let newpos[2] = a:matchlinelist[current_index][1] + 1 "column number
 			call setpos('.', newpos)
+			if exists('target_select_id')
+				call matchdelete(target_select_id)
+			endif
+			let select_coord = []
+			call add(select_coord, '\%' . newpos[1] . 'l\%' . newpos[2] . 'c')
+			let target_select_id = matchadd(s:LineJumpSelectGroup, join(select_coord, '\|'), 200)
+			redraw
 			"echo "char " . char
 		endwhile
+
+		if exists('target_select_id')
+			call matchdelete(target_select_id)
+		endif
 
 		if exists('target_hl_id')
 			call matchdelete(target_hl_id)
 		endif
 endfunction
 
-function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline)
-	try 
+function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline, charget)
+	"try
 		let ki = 0
 		let alpha_use_dict = {}
 		let hl_coords = []
 		for mline in a:matchlinelist
 			let line = g:linelist[mline[0]-a:startline]
-			let linereplace = substitute(line,charget,s:alpha_forward_list[ki],"")
+			let linereplace = substitute(line,a:charget,s:alpha_forward_list[ki],"") 
 			call setline(mline[0],linereplace)
 			call add(hl_coords, '\%' . mline[0] . 'l\%' . (mline[1]+1) . 'c')
 			let alpha_use_dict[s:alpha_forward_list[ki]] = mline[0]
@@ -245,20 +269,20 @@ function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline)
 		let newpos[2] = 0
 		let newpos[1] = linefound
 		call setpos('.', newpos)
-	catch
-	finally
+	"catch
+	"finally
 		if exists('target_hl_id')
 			call matchdelete(target_hl_id)
 		endif
 
 		"restore line
-		for mline in matchlinelist
+		for mline in a:matchlinelist
 			"echo "match pattern:". pattern
 			call setline(mline[0],g:linelist[mline[0]-a:startline])
 		endfor
 
 		redraw
-	endtry
+	"endtry
 endfunction
 
 function! LineJumpPage()
@@ -325,10 +349,10 @@ function! LineJumpPage()
 	if len(matchlinelist) == 1
 		let linefound = matchlinelist[0][0]
 	else
-		if g:LineJumpSelectMethod == 0:
-			call LineJumpSelectMethodByNumberAlpha()
+		if g:LineJumpSelectMethod == 0
+			call LineJumpSelectMethodByNumberAlpha(matchlinelist, startline,charget)
 		else
-			call LineJumpSelectMethodByMotion()
+			call LineJumpSelectMethodByMotion(matchlinelist)
 		endif
 	endif
 
