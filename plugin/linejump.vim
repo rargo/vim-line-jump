@@ -22,6 +22,7 @@ autocmd ColorScheme * call LineJumpLoadColor(s:target_select_defaults,s:LineJump
 let s:LineJumpHiGroup = "LineJumpHiGroup"
 let s:LineJumpSelectGroup = "LineJumpSelectGroup"
 
+
 "load color for linejump
 function! LineJumpLoadColor(colors,group)
 		let groupdefault = a:group . 'Default'
