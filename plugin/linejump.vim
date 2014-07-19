@@ -153,82 +153,76 @@ endfunction
 
 "{'a':[[0,1], [3,2]], 'b':[[1,2],[5,4]]}
 
+"select
+"	0: select by press number and alpha
+"	1: select by "j,k,h,l,m"
+let g:LineJumpSelectMethod = 0
+
 let s:LineJumpCharacterDict = {}
-function! LineJumpPage()
+function! LineJumpSelectMethodByMotion(matchlinelist, startline)
+		let hl_coords = []
+		for mline in a:matchlinelist
+			call add(hl_coords, '\%' . mline[0] . 'l\%' . (mline[1]+1) . 'c')
+			let ki += 1
+		endfor
 
-	let s:LineJumpCharacterDict = {}
-	let old_modifiable = &modifiable
-    "setlocal buftype=nofile
-    setlocal modifiable
+		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
+		redraw
 
-	let old_undolevels = &undolevels
-	set undolevels=-1
-
-	let startline = line("w0")
-	let endline = line("w$")
-	let g:linelist = getline(startline, endline)
-	let lineindex = startline
-	let hl_coords = []
-	for line in g:linelist
-		let pos = match(line, '\w')
-		if pos != -1
-			let c = matchstr(line,'\w')
-			"echo "c" . c
-			let pos_list = [lineindex, pos]
-			if !has_key(s:LineJumpCharacterDict,c)
-				let s:LineJumpCharacterDict[c] = []
+		let charget = '#'
+		let current_index = 0
+		let max_index = len(a:matchlinelist) - 1
+		let newpos = getpos('.')
+		let newpos[1] = a:matchlinelist[current_index][0] "line number
+		let newpos[2] = a:matchlinelist[current_index][1] + 1 "column number
+		call setpos('.', newpos)
+		while 9
+			let key = getchar()
+			let char = nr2char(key)
+			if char == 'i'
+				let  current_index += 1
+				if current_index > max_index
+					let current_index = 0
+				endif
+			elseif char == 'j'
+				let  current_index += 1
+				if current_index < 0
+					let current_index = max_index
+				endif
+			elseif char == 'm'
+				let  current_index = max_index/2
+			elseif char == 'l'
+				let  current_index = max_index
+			elseif char == 'h'
+				let  current_index = 0
+			else
+				break;
 			endif
-			call add(s:LineJumpCharacterDict[c],pos_list)
-			"call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
-			call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
+			let newpos = getpos('.')
+			let newpos[1] = a:matchlinelist[current_index][0] "line number
+			let newpos[2] = a:matchlinelist[current_index][1] + 1 "column number
+			call setpos('.', newpos)
+			"echo "char " . char
+		endwhile
+
+		if exists('target_hl_id')
+			call matchdelete(target_hl_id)
 		endif
-		let lineindex += 1
-	endfor
+endfunction
 
-	let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
-
-	redraw
-
-	"XXX
-	let charget = '#'
-	while 9
-		let key = getchar()
-		let char = nr2char(key)
-		"echo "char " . char
-		"TODO handle error key 
-		if has_key(s:LineJumpCharacterDict,char)
-			let charget = char
-			break
-		endif
-		"echo "linejump " . linejump
-	endwhile
-
-	if exists('target_hl_id')
-		call matchdelete(target_hl_id)
-	endif
-
-	redraw
-
-	"see if there more than one match line
-	let linefound = 10000
-	let matchlinelist = s:LineJumpCharacterDict[charget]
-	echo len(matchlinelist)
-	if len(matchlinelist) == 1
-		let linefound = matchlinelist[0][0]
-	else
+function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline)
+	try 
 		let ki = 0
 		let alpha_use_dict = {}
 		let hl_coords = []
-		let ki = 0
-		for mline in matchlinelist
-			let line = g:linelist[mline[0]-startline]
+		for mline in a:matchlinelist
+			let line = g:linelist[mline[0]-a:startline]
 			let linereplace = substitute(line,charget,s:alpha_forward_list[ki],"")
 			call setline(mline[0],linereplace)
 			call add(hl_coords, '\%' . mline[0] . 'l\%' . (mline[1]+1) . 'c')
 			let alpha_use_dict[s:alpha_forward_list[ki]] = mline[0]
 			let ki += 1
 		endfor
-		echo s:alpha_forward_list
 
 		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
 		redraw
@@ -247,7 +241,12 @@ function! LineJumpPage()
 		endwhile
 
 		let linefound = alpha_use_dict[charget]
-
+		let newpos = getpos('.')
+		let newpos[2] = 0
+		let newpos[1] = linefound
+		call setpos('.', newpos)
+	catch
+	finally
 		if exists('target_hl_id')
 			call matchdelete(target_hl_id)
 		endif
@@ -255,17 +254,82 @@ function! LineJumpPage()
 		"restore line
 		for mline in matchlinelist
 			"echo "match pattern:". pattern
-			call setline(mline[0],g:linelist[mline[0]-startline])
+			call setline(mline[0],g:linelist[mline[0]-a:startline])
 		endfor
 
 		redraw
-	endif
+	endtry
+endfunction
 
-	if linefound != 10000
-		let newpos = getpos('.')
-		let newpos[2] = 0
-		let newpos[1] = linefound
-		call setpos('.', newpos)
+function! LineJumpPage()
+
+	let s:LineJumpCharacterDict = {}
+	let old_modifiable = &modifiable
+    "setlocal buftype=nofile
+    setlocal modifiable
+
+	let old_undolevels = &undolevels
+	set undolevels=-1
+
+	try
+		let startline = line("w0")
+		let endline = line("w$")
+		let g:linelist = getline(startline, endline)
+		let lineindex = startline
+		let hl_coords = []
+		for line in g:linelist
+			let pos = match(line, '\w')
+			if pos != -1
+				let c = matchstr(line,'\w')
+				"echo "c" . c
+				let pos_list = [lineindex, pos]
+				if !has_key(s:LineJumpCharacterDict,c)
+					let s:LineJumpCharacterDict[c] = []
+				endif
+				call add(s:LineJumpCharacterDict[c],pos_list)
+				"call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
+				call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
+			endif
+			let lineindex += 1
+		endfor
+
+		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
+
+		redraw
+
+		"XXX
+		let charget = '#'
+		while 9
+			let key = getchar()
+			let char = nr2char(key)
+			"echo "char " . char
+			"TODO handle error key 
+			if has_key(s:LineJumpCharacterDict,char)
+				let charget = char
+				break
+			endif
+			"echo "linejump " . linejump
+		endwhile
+	catch
+	finally
+		if exists('target_hl_id')
+			call matchdelete(target_hl_id)
+		endif
+
+		redraw
+	endtry
+
+	"see if there more than one match line
+	let matchlinelist = s:LineJumpCharacterDict[charget]
+	echo len(matchlinelist)
+	if len(matchlinelist) == 1
+		let linefound = matchlinelist[0][0]
+	else
+		if g:LineJumpSelectMethod == 0:
+			call LineJumpSelectMethodByNumberAlpha()
+		else
+			call LineJumpSelectMethodByMotion()
+		endif
 	endif
 
 	let bufname = bufname('%')
