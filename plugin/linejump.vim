@@ -164,11 +164,14 @@ endfunction
 "select
 "	0: select by press number and alpha
 "	1: select by "j,k,h,l,m"
-"	2: smart, if more than g:LineJumpSmartSelectNumber
+"		u: scroll prev page
+"		d: scroll next page
+"	2: smart select, if more than g:LineJumpSmartSelectNumber
 "		use method 0, else use method 1
 let g:LineJumpSelectMethod = 2
-
-let g:LineJumpSmartSelectNumber = 6
+"g:LineJumpSmartSelectNumber only has meaning 
+"when g:LineJumpSelectMethod == 2 
+let g:LineJumpSmartSelectNumber = 20 
 
 let s:LineJumpCharacterDict = {}
 function! LineJumpSelectMethodByMotion(matchlinelist)
@@ -378,7 +381,7 @@ function! LineJumpRange(startline, endline)
 	if len(matchlinelist) == 1
 		let linefound = matchlinelist[0][0]
 		let newpos = getpos('.')
-		let newpos[2] = 0
+		let newpos[2] = matchlinelist[0][1] + 1
 		let newpos[1] = linefound
 		call setpos('.', newpos)
 	else
