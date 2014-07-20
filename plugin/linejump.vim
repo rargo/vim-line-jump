@@ -42,9 +42,6 @@ function! LineJumpLoadColor(colors,group)
 		execute printf('hi default link %s %s', a:group, groupdefault)
 endfunction
 
-call LineJumpLoadColor(s:target_select_defaults,s:LineJumpSelectGroup)
-call LineJumpLoadColor(s:target_hl_defaults,s:LineJumpHiGroup)
-
 "
 let g:line_jump_post_action = {'__Tagbar__': "normal w",'NERD_tree_\d\+':"call Linejumpfirstword()", '.*':"normal zz"}
 let g:line_jump_post_action_priority = ['__Tagbar__', 'NERD_tree_\d\+', '*']
@@ -167,7 +164,11 @@ endfunction
 "select
 "	0: select by press number and alpha
 "	1: select by "j,k,h,l,m"
-let g:LineJumpSelectMethod = 1
+"	2: smart, if more than g:LineJumpSmartSelectNumber
+"		use method 0, else use method 1
+let g:LineJumpSelectMethod = 2
+
+let g:LineJumpSmartSelectNumber = 6
 
 let s:LineJumpCharacterDict = {}
 function! LineJumpSelectMethodByMotion(matchlinelist)
@@ -210,6 +211,7 @@ function! LineJumpSelectMethodByMotion(matchlinelist)
 			elseif char == 'h'
 				let  current_index = 0
 			else
+				let charget = char
 				break
 			endif
 			let newpos = getpos('.')
@@ -233,6 +235,8 @@ function! LineJumpSelectMethodByMotion(matchlinelist)
 		if exists('target_hl_id')
 			call matchdelete(target_hl_id)
 		endif
+
+		return charget
 endfunction
 
 function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline, charget)
@@ -283,28 +287,33 @@ function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline, charget)
 		endfor
 
 		redraw
+
+		return charget
 	"endtry
 endfunction
 
 function! LineJumpForward()
 	let startline = line(".")
 	let endline = line("w$")
-	call LineJumpRange(startlien, endline)
+	call LineJumpRange(startline, endline)
 endfunction
 
 function! LineJumpBackward()
 	let startline = line("w0")
 	let endline = line(".")
-	call LineJumpRange(startlien, endline)
+	call LineJumpRange(startline, endline)
 endfunction
 
 function! LineJumpPage()
 	let startline = line("w0")
 	let endline = line("w$")
-	call LineJumpRange(startlien, endline)
+	call LineJumpRange(startline, endline)
 endfunction
 
 function! LineJumpRange(startline, endline)
+
+	call LineJumpLoadColor(s:target_select_defaults,s:LineJumpSelectGroup)
+	call LineJumpLoadColor(s:target_hl_defaults,s:LineJumpHiGroup)
 
 	let s:LineJumpCharacterDict = {}
 	let old_modifiable = &modifiable
@@ -368,25 +377,35 @@ function! LineJumpRange(startline, endline)
 	echo len(matchlinelist)
 	if len(matchlinelist) == 1
 		let linefound = matchlinelist[0][0]
+		let newpos = getpos('.')
+		let newpos[2] = 0
+		let newpos[1] = linefound
+		call setpos('.', newpos)
 	else
 		if g:LineJumpSelectMethod == 0
 			call LineJumpSelectMethodByNumberAlpha(matchlinelist, startline,charget)
-		else
+		elseif g:LineJumpSelectMethod == 1
 			call LineJumpSelectMethodByMotion(matchlinelist)
+		else
+			if len(matchlinelist) >= g:LineJumpSmartSelectNumber
+				call LineJumpSelectMethodByNumberAlpha(matchlinelist, startline,charget)
+			else
+				call LineJumpSelectMethodByMotion(matchlinelist)
+			endif
 		endif
 	endif
 
-	let bufname = bufname('%')
-	"echo bufname
-	for pattern in g:line_jump_post_action_priority
-		"echo "pattern:". pattern
-		if match(bufname, pattern,0) != -1
-		"if match(bufname, ".*",0) != -1
-			"echo "match pattern:". pattern
-			execute "" . g:line_jump_post_action[pattern]
-			break
-		endif
-	endfor
+	"let bufname = bufname('%')
+	""echo bufname
+	"for pattern in g:line_jump_post_action_priority
+		""echo "pattern:". pattern
+		"if match(bufname, pattern,0) != -1
+		""if match(bufname, ".*",0) != -1
+			""echo "match pattern:". pattern
+			"execute "" . g:line_jump_post_action[pattern]
+			"break
+		"endif
+	"endfor
 
 	let &undolevels = old_undolevels
 	"unlet old_undolevels
