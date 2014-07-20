@@ -286,7 +286,25 @@ function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline, charget)
 	"endtry
 endfunction
 
+function! LineJumpForward()
+	let startline = line(".")
+	let endline = line("w$")
+	call LineJumpRange(startlien, endline)
+endfunction
+
+function! LineJumpBackward()
+	let startline = line("w0")
+	let endline = line(".")
+	call LineJumpRange(startlien, endline)
+endfunction
+
 function! LineJumpPage()
+	let startline = line("w0")
+	let endline = line("w$")
+	call LineJumpRange(startlien, endline)
+endfunction
+
+function! LineJumpRange(startline, endline)
 
 	let s:LineJumpCharacterDict = {}
 	let old_modifiable = &modifiable
@@ -296,9 +314,10 @@ function! LineJumpPage()
 	let old_undolevels = &undolevels
 	set undolevels=-1
 
+	let startline = a:startline
+	let endline = a:endline
+
 	try
-		let startline = line("w0")
-		let endline = line("w$")
 		let g:linelist = getline(startline, endline)
 		let lineindex = startline
 		let hl_coords = []
