@@ -22,7 +22,6 @@ autocmd ColorScheme * call LineJumpLoadColor(s:target_select_defaults,s:LineJump
 let s:LineJumpHiGroup = "LineJumpHiGroup"
 let s:LineJumpSelectGroup = "LineJumpSelectGroup"
 
-
 "load color for linejump
 function! LineJumpLoadColor(colors,group)
 		let groupdefault = a:group . 'Default'
@@ -168,7 +167,7 @@ endfunction
 "		d: scroll next page
 "	2: smart select, if more than g:LineJumpSmartSelectNumber
 "		use method 0, else use method 1
-let g:LineJumpSelectMethod = 2
+let g:LineJumpSelectMethod = 0
 "g:LineJumpSmartSelectNumber only has meaning 
 "when g:LineJumpSelectMethod == 2 
 let g:LineJumpSmartSelectNumber = 20 
@@ -252,7 +251,7 @@ function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline, charget)
 			let linereplace = substitute(line,a:charget,s:alpha_forward_list[ki],"") 
 			call setline(mline[0],linereplace)
 			call add(hl_coords, '\%' . mline[0] . 'l\%' . (mline[1]+1) . 'c')
-			let alpha_use_dict[s:alpha_forward_list[ki]] = mline[0]
+			let alpha_use_dict[s:alpha_forward_list[ki]] = mline
 			let ki += 1
 		endfor
 
@@ -274,8 +273,8 @@ function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline, charget)
 
 		let linefound = alpha_use_dict[charget]
 		let newpos = getpos('.')
-		let newpos[2] = 0
-		let newpos[1] = linefound
+		let newpos[1] = linefound[0]
+		let newpos[2] = linefound[1] + 1
 		call setpos('.', newpos)
 	"catch
 	"finally
