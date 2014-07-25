@@ -167,7 +167,7 @@ endfunction
 "		d: scroll next page
 "	2: smart select, if more than g:LineJumpSmartSelectNumber
 "		use method 0, else use method 1
-let g:LineJumpSelectMethod = 0
+let g:LineJumpSelectMethod = 1
 "g:LineJumpSmartSelectNumber only has meaning 
 "when g:LineJumpSelectMethod == 2 
 let g:LineJumpSmartSelectNumber = 20 
@@ -194,6 +194,13 @@ function! LineJumpSelectMethodByMotion(matchlinelist)
 		let target_select_id = matchadd(s:LineJumpSelectGroup, join(select_coord, '\|'), 200)
 		redraw
 		while 9
+			"let key = getchar()
+			let key = PeekCharTimeout(1000)
+			if key == 0
+				"let charget = ''
+				"echo "peek timeout"
+				break
+			endif
 			let key = getchar()
 			let char = nr2char(key)
 			if char == 'j'
@@ -238,8 +245,22 @@ function! LineJumpSelectMethodByMotion(matchlinelist)
 			call matchdelete(target_hl_id)
 		endif
 
-		return charget
+		"if charget != ' ' && charget != ''
+			"echo 'charget ' . charget
+			"execute "normal " . charget
+		"endif
+		"return charget
 endfunction
+
+function! PeekCharTimeout(milli) 
+    " non-consuming key-wait with timeout 
+    let k=a:milli 
+    while k > 0 && getchar(1) == 0 
+        sleep 100m 
+        let k = k - 100 
+    endwh 
+    return getchar(1) 
+endfun 
 
 function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline, charget)
 	"try
