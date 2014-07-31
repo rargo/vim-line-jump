@@ -195,7 +195,7 @@ function! LineJumpSelectMethodByMotion(matchlinelist)
 		redraw
 		while 9
 			"let key = getchar()
-			let key = PeekCharTimeout(1000)
+			let key = PeekCharTimeout(600)
 			if key == 0
 				"let charget = ''
 				"echo "peek timeout"
@@ -256,8 +256,8 @@ function! PeekCharTimeout(milli)
     " non-consuming key-wait with timeout 
     let k=a:milli 
     while k > 0 && getchar(1) == 0 
-        sleep 100m 
-        let k = k - 100 
+        sleep 50m 
+        let k = k - 50
     endwh 
     return getchar(1) 
 endfun 
