@@ -1,5 +1,56 @@
-let s:alpha_forward_list = ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
-let s:alpha_line_map = {'0':0,'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'a':10,'b':11,'c':12,'d':13,'e':14,'f':15,'g':16,'h':17,'i':18,'j':19,'k':20,'l':21,'m':22,'n':23,'o':24,'p':25,'q':26,'r':27,'s':28,'t':29,'u':30,'v':31,'w':32,'x':33,'y':34,'z':35,'A':36,'B':37,'C':38,'D':39,'E':40,'F':41,'G':42,'H':43,'I':44,'J':45,'K':46,'L':47,'M':48,'N':49,'O':50,'P':51,'Q':52,'R':53,'S':54,'T':55,'U':56,'V':57,'W':58,'X':59,'Y':60,'Z':61}
+"linejump, jump quickly by select line's first alpha
+"rargo.m@gmail.com
+"2014.09.08 Mid-autumn Day complete this, It's sad
+
+"g:LineJumpSelectMethod, define sub select way
+"	0: sub select by press number and alpha
+"	1: sub select by "j,k,h,l,m", selection by key will be timeout
+"		after g:LineJumpPeepKeyTimeout milliseconds
+"	2: sub select by LineJumpSubForward(), LineJumpSubBackward()
+"		need to map these two functions to some key
+"	3: smart select, sub select by g:LineJumpSmartSelectMethod
+let g:LineJumpSelectMethod = 3
+"Only effective when g:LineJumpSelectMethod == 1
+let g:LineJumpPeepKeyTimeout = 700
+"Only effective when g:LineJumpSelectMethod == 3 && g:LineJumpSmartSelectMethod == 0
+let g:LineJumpSmartSelectNumber = 5
+"g:LineJumpSmartSelectMethod == 0:
+"	if match line less than g:LineJumpSmartSelectNumber
+"		sub select by "j,k,h,l,m",
+"	else sub select by alpha
+"g:LineJumpSmartSelectMethod == 1:
+"	if match line less than g:LineJumpSmartSelectNumber
+"		sub select by LineJumpSubForward(), LineJumpSubBackward(),
+"	else sub select by alpha
+let g:LineJumpSmartSelectMethod = 1
+
+augroup LineJumpNerdTree
+	"I find nerdtree's f map to something not that useful!
+	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> f <ESC>:call LineJumpForward()<cr>
+
+	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> ; <ESC>:call LineJumpSubForward()<cr>
+
+	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> b <ESC>:call LineJumpBackward()<cr>
+
+	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> , <ESC>:call LineJumpSubBackward()<cr>
+augroup END
+
+augroup LineJumpTagbar
+	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> f <ESC>:call LineJumpForward()<cr>
+
+	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> ; <ESC>:call LineJumpSubForward()<cr>
+
+	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> b <ESC>:call LineJumpBackward()<cr>
+
+	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> , <ESC>:call LineJumpSubBackward()<cr>
+augroup END
+
+
+let s:LineJumpCharacterDict = {}
+
+let s:alpha_forward_list = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+
+let s:alpha_line_map = {'a':0,'b':1,'c':2,'d':3,'e':4,'f':5,'g':6,'h':7,'i':8,'j':9,'k':10,'l':11,'m':12,'n':13,'o':14,'p':15,'q':16,'r':17,'s':18,'t':19,'u':20,'v':21,'w':22,'x':23,'y':24,'z':25,'A':26,'B':27,'C':28,'D':29,'E':30,'F':31,'G':32,'H':33,'I':34,'J':35,'K':36,'L':37,'M':38,'N':39,'O':40,'P':41,'Q':42,'R':43,'S':44,'T':45,'U':46,'V':47,'W':48,'X':49,'Y':50,'Z':51}
 "let g:linelist = []
 
 "borrow from easymotion
@@ -45,76 +96,6 @@ endfunction
 let g:line_jump_post_action = {'__Tagbar__': "normal w",'NERD_tree_\d\+':"call Linejumpfirstword()", '.*':"normal zz"}
 let g:line_jump_post_action_priority = ['__Tagbar__', 'NERD_tree_\d\+', '*']
 
-function! Linejumpstart()
-	let old_modifiable = &modifiable
-    "setlocal buftype=nofile
-    setlocal modifiable
-
-	let old_undolevels = &undolevels
-	set undolevels=-1
-
-	let hl_coords = []
-	let startline = line("w0")
-	let endline = line("w$")
-	let g:linelist = getline(startline, endline)
-	let linelist_replace = []
-	let i = 0
-	for line in g:linelist
-		"make new line
-		if i % 2 == 0
-			let newline = s:alpha_forward_list[i] . "  " . line
-		else
-			"let newline = " " . s:alpha_forward_list[i] . " " . line
-			let newline = s:alpha_forward_list[i] . "  " . line
-		endif
-		call add(hl_coords, '\%' . (startline+i) . 'l\%' . 1 . 'c')
-		call add(linelist_replace, newline)
-		let i += 1
-	endfor
-
-	call setline(startline, linelist_replace)
-
-	let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 1)
-
-	redraw
-
-	let key = getchar()
-	let char = nr2char(key)
-	"echo "char " . char
-	let linejump = get(s:alpha_line_map,char,10000)
-	"echo "linejump " . linejump
-	if linejump != 10000
-		let pos = getpos('.')
-		let pos[2] = 0
-		let pos[1] = linejump + startline
-		call setpos('.', pos)
-	endif
-	call setline(startline, g:linelist)
-
-	if exists('target_hl_id')
-		call matchdelete(target_hl_id)
-	endif
-
-	let bufname = bufname('%')
-	echo bufname
-	for pattern in g:line_jump_post_action_priority
-		"echo "pattern:". pattern
-		if match(bufname, pattern,0) != -1
-		"if match(bufname, ".*",0) != -1
-			"echo "match pattern:". pattern
-			execute "" . g:line_jump_post_action[pattern]
-			break
-		endif
-	endfor
-
-	let &undolevels = old_undolevels
-	"unlet old_undolevels
-
-	if old_modifiable == 0
-		setlocal nomodifiable
-	endif
-endfunction
-
 function! Linejumpfirstword()
 	let pos = getpos('.')
 	let first_word_pos = match(getline('.'), '\w\+')
@@ -124,55 +105,7 @@ function! Linejumpfirstword()
 	endif
 endfunction
 
-"let g:LineJumpMethod = 0
 
-"function! LineJumpPageBackward()
-	"let old_modifiable = &modifiable
-    ""setlocal buftype=nofile
-    "setlocal modifiable
-
-	"let old_undolevels = &undolevels
-	"set undolevels=-1
-
-	"let &undolevels = old_undolevels
-	""unlet old_undolevels
-
-	"if old_modifiable == 0
-		"setlocal nomodifiable
-	"endif
-"endfunction
-
-"function! LineJumpForward()
-	"let old_modifiable = &modifiable
-    ""setlocal buftype=nofile
-    "setlocal modifiable
-
-	"let old_undolevels = &undolevels
-	"set undolevels=-1
-
-	"let &undolevels = old_undolevels
-	""unlet old_undolevels
-
-	"if old_modifiable == 0
-		"setlocal nomodifiable
-	"endif
-"endfunction
-
-"{'a':[[0,1], [3,2]], 'b':[[1,2],[5,4]]}
-
-"select
-"	0: select by press number and alpha
-"	1: select by "j,k,h,l,m"
-"		u: scroll prev page
-"		d: scroll next page
-"	2: smart select, if more than g:LineJumpSmartSelectNumber
-"		use method 0, else use method 1
-let g:LineJumpSelectMethod = 1
-"g:LineJumpSmartSelectNumber only has meaning 
-"when g:LineJumpSelectMethod == 2 
-let g:LineJumpSmartSelectNumber = 20 
-
-let s:LineJumpCharacterDict = {}
 function! LineJumpSelectMethodByMotion(matchlinelist)
 		let hl_coords = []
 		for mline in a:matchlinelist
@@ -195,7 +128,7 @@ function! LineJumpSelectMethodByMotion(matchlinelist)
 		redraw
 		while 9
 			"let key = getchar()
-			let key = PeekCharTimeout(600)
+			let key = PeekCharTimeout(g:LineJumpPeepKeyTimeout)
 			if key == 0
 				"let charget = ''
 				"echo "peek timeout"
@@ -315,6 +248,46 @@ function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline, charget)
 	"endtry
 endfunction
 
+let s:subjump_matchlist = []
+let s:subjump_matchlist_pos = -1
+
+function! LineJumpSubForward()
+	if g:LineJumpSelectMethod ==2 || (g:LineJumpSelectMethod == 3 && g:LineJumpSmartSelectMethod == 1)
+	else
+		return
+	endif
+	if s:subjump_matchlist_pos != -1
+		let s:subjump_matchlist_pos += 1
+		if s:subjump_matchlist_pos == len(s:subjump_matchlist)
+			let s:subjump_matchlist_pos = 0
+		endif
+	endif
+	let linefound = s:subjump_matchlist[s:subjump_matchlist_pos][0]
+	let newpos = getpos('.')
+	let newpos[2] = s:subjump_matchlist[s:subjump_matchlist_pos][1] + 1
+	let newpos[1] = linefound
+	call setpos('.', newpos)
+endfunction
+
+function! LineJumpSubBackward()
+	if g:LineJumpSelectMethod ==2 || (g:LineJumpSelectMethod == 3 && g:LineJumpSmartSelectMethod == 1)
+	else
+		return
+	endif
+	if s:subjump_matchlist_pos != -1
+		if s:subjump_matchlist_pos == 0
+			let s:subjump_matchlist_pos = len(s:subjump_matchlist) - 1
+		else
+			let s:subjump_matchlist_pos -= 1
+		endif
+	endif
+	let linefound = s:subjump_matchlist[s:subjump_matchlist_pos][0]
+	let newpos = getpos('.')
+	let newpos[2] = s:subjump_matchlist[s:subjump_matchlist_pos][1] + 1
+	let newpos[1] = linefound
+	call setpos('.', newpos)
+endfunction
+
 function! LineJumpForward()
 	let startline = line(".")
 	let endline = line("w$")
@@ -409,11 +382,31 @@ function! LineJumpRange(startline, endline)
 			call LineJumpSelectMethodByNumberAlpha(matchlinelist, startline,charget)
 		elseif g:LineJumpSelectMethod == 1
 			call LineJumpSelectMethodByMotion(matchlinelist)
-		else
+		elseif g:LineJumpSelectMethod == 2
+			"select by LineJumpSubForward(), LineJumpPageBackward()
+			let linefound = matchlinelist[0][0]
+			let newpos = getpos('.')
+			let newpos[2] = matchlinelist[0][1] + 1
+			let newpos[1] = linefound
+			call setpos('.', newpos)
+			let s:subjump_matchlist = matchlinelist[:]
+			let s:subjump_matchlist_pos = 0
+		else "if g:LineJumpSelectMethod == 3
 			if len(matchlinelist) >= g:LineJumpSmartSelectNumber
 				call LineJumpSelectMethodByNumberAlpha(matchlinelist, startline,charget)
 			else
-				call LineJumpSelectMethodByMotion(matchlinelist)
+				if g:LineJumpSmartSelectMethod == 0
+					call LineJumpSelectMethodByMotion(matchlinelist)
+				else "if g:LineJumpSmartSelectMethod == 1
+					"select by LineJumpSubForward(), LineJumpPageBackward()
+					let linefound = matchlinelist[0][0]
+					let newpos = getpos('.')
+					let newpos[2] = matchlinelist[0][1] + 1
+					let newpos[1] = linefound
+					call setpos('.', newpos)
+					let s:subjump_matchlist = matchlinelist[:]
+					let s:subjump_matchlist_pos = 0
+				endif
 			endif
 		endif
 	endif
