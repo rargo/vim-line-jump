@@ -1,6 +1,5 @@
 "linejump, jump quickly by select line's first alpha
 "rargo.m@gmail.com
-"2014.09.08 Mid-autumn Day complete this, It's sad
 
 "g:LineJumpSelectMethod, define sub select way
 "	0: sub select by press number and alpha
@@ -9,11 +8,17 @@
 "	2: sub select by LineJumpSubForward(), LineJumpSubBackward()
 "		need to map these two functions to some key
 "	3: smart select, sub select by g:LineJumpSmartSelectMethod
-let g:LineJumpSelectMethod = 3
+if !exists("g:LineJumpSelectMethod")
+	let g:LineJumpSelectMethod = 2
+endif
 "Only effective when g:LineJumpSelectMethod == 1
-let g:LineJumpPeepKeyTimeout = 700
+if !exists("g:LineJumpPeepKeyTimeout")
+	let g:LineJumpPeepKeyTimeout = 700
+endif
 "Only effective when g:LineJumpSelectMethod == 3 && g:LineJumpSmartSelectMethod == 0
-let g:LineJumpSmartSelectNumber = 5
+if !exists("g:LineJumpSmartSelectNumber")
+	let g:LineJumpSmartSelectNumber = 5
+endif
 "g:LineJumpSmartSelectMethod == 0:
 "	if match line less than g:LineJumpSmartSelectNumber
 "		sub select by "j,k,h,l,m",
@@ -22,7 +27,9 @@ let g:LineJumpSmartSelectNumber = 5
 "	if match line less than g:LineJumpSmartSelectNumber
 "		sub select by LineJumpSubForward(), LineJumpSubBackward(),
 "	else sub select by alpha
-let g:LineJumpSmartSelectMethod = 1
+if !exists("g:LineJumpSmartSelectMethod")
+	let g:LineJumpSmartSelectMethod = 1
+endif
 
 augroup LineJumpNerdTree
 	"I find nerdtree's f map to something not that useful!
