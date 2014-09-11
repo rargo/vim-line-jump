@@ -256,23 +256,23 @@ function! LineJumpSelectMethodByNumberAlpha(matchlinelist, startline, charget)
 	"endtry
 endfunction
 
-let s:subjump_matchlist = []
-let s:subjump_matchlist_pos = -1
+let b:subjump_matchlist = []
+let b:subjump_matchlist_pos = -1
 
 function! LineJumpSubForward()
 	if g:LineJumpSelectMethod ==2 || (g:LineJumpSelectMethod == 3 && g:LineJumpSmartSelectMethod == 1)
 	else
 		return
 	endif
-	if s:subjump_matchlist_pos != -1
-		let s:subjump_matchlist_pos += 1
-		if s:subjump_matchlist_pos == len(s:subjump_matchlist)
-			let s:subjump_matchlist_pos = 0
+	if b:subjump_matchlist_pos != -1
+		let b:subjump_matchlist_pos += 1
+		if b:subjump_matchlist_pos == len(b:subjump_matchlist)
+			let b:subjump_matchlist_pos = 0
 		endif
 	endif
-	let linefound = s:subjump_matchlist[s:subjump_matchlist_pos][0]
+	let linefound = b:subjump_matchlist[b:subjump_matchlist_pos][0]
 	let newpos = getpos('.')
-	let newpos[2] = s:subjump_matchlist[s:subjump_matchlist_pos][1] + 1
+	let newpos[2] = b:subjump_matchlist[b:subjump_matchlist_pos][1] + 1
 	let newpos[1] = linefound
 	call setpos('.', newpos)
 endfunction
@@ -282,16 +282,16 @@ function! LineJumpSubBackward()
 	else
 		return
 	endif
-	if s:subjump_matchlist_pos != -1
-		if s:subjump_matchlist_pos == 0
-			let s:subjump_matchlist_pos = len(s:subjump_matchlist) - 1
+	if b:subjump_matchlist_pos != -1
+		if b:subjump_matchlist_pos == 0
+			let b:subjump_matchlist_pos = len(b:subjump_matchlist) - 1
 		else
-			let s:subjump_matchlist_pos -= 1
+			let b:subjump_matchlist_pos -= 1
 		endif
 	endif
-	let linefound = s:subjump_matchlist[s:subjump_matchlist_pos][0]
+	let linefound = b:subjump_matchlist[b:subjump_matchlist_pos][0]
 	let newpos = getpos('.')
-	let newpos[2] = s:subjump_matchlist[s:subjump_matchlist_pos][1] + 1
+	let newpos[2] = b:subjump_matchlist[b:subjump_matchlist_pos][1] + 1
 	let newpos[1] = linefound
 	call setpos('.', newpos)
 endfunction
@@ -397,8 +397,8 @@ function! LineJumpRange(startline, endline)
 			let newpos[2] = matchlinelist[0][1] + 1
 			let newpos[1] = linefound
 			call setpos('.', newpos)
-			let s:subjump_matchlist = matchlinelist[:]
-			let s:subjump_matchlist_pos = 0
+			let b:subjump_matchlist = matchlinelist[:]
+			let b:subjump_matchlist_pos = 0
 		else "if g:LineJumpSelectMethod == 3
 			if len(matchlinelist) >= g:LineJumpSmartSelectNumber
 				call LineJumpSelectMethodByNumberAlpha(matchlinelist, startline,charget)
@@ -412,8 +412,8 @@ function! LineJumpRange(startline, endline)
 					let newpos[2] = matchlinelist[0][1] + 1
 					let newpos[1] = linefound
 					call setpos('.', newpos)
-					let s:subjump_matchlist = matchlinelist[:]
-					let s:subjump_matchlist_pos = 0
+					let b:subjump_matchlist = matchlinelist[:]
+					let b:subjump_matchlist_pos = 0
 				endif
 			endif
 		endif
