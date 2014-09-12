@@ -1,6 +1,5 @@
 "linejump, jump quickly by select line's first alpha
 "rargo.m@gmail.com
-"2014.09.08 Mid-autumn Day complete this, It's sad
 
 "g:LineJumpSelectMethod, define sub select way
 "	0: sub select by press number and alpha
