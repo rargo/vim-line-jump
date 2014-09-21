@@ -3,9 +3,7 @@
 
 "g:LineJumpSelectMethod, define sub select way
 "	0: sub select by press number and alpha
-"	1: sub select by "j,k,h,l,m", selection by key will be timeout
-"		after g:LineJumpPeepKeyTimeout milliseconds
-"	2: sub select by LineJumpSubForward(), LineJumpSubBackward()
+"	2: sub select by LineJumpForwardMove(), LineJumpBackwardMove()
 "		need to map these two functions to some key
 "	3: smart select, sub select by g:LineJumpSmartSelectMethod
 if !exists("g:LineJumpSelectMethod")
@@ -19,13 +17,9 @@ endif
 if !exists("g:LineJumpSmartSelectNumber")
 	let g:LineJumpSmartSelectNumber = 5
 endif
-"g:LineJumpSmartSelectMethod == 0:
-"	if match line less than g:LineJumpSmartSelectNumber
-"		sub select by "j,k,h,l,m",
-"	else sub select by alpha
 "g:LineJumpSmartSelectMethod == 1:
 "	if match line less than g:LineJumpSmartSelectNumber
-"		sub select by LineJumpSubForward(), LineJumpSubBackward(),
+"		sub select by LineJumpForwardMove(), LineJumpBackwardMove(),
 "	else sub select by alpha
 if !exists("g:LineJumpSmartSelectMethod")
 	let g:LineJumpSmartSelectMethod = 1
@@ -33,23 +27,23 @@ endif
 
 augroup LineJumpNerdTree
 	"I find nerdtree's f map to something not that useful!
-	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> f <ESC>:call LineJumpForward()<cr>
+	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> f <ESC>:call LineJumpForwardSelect()<cr>
 
-	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> ; <ESC>:call LineJumpSubForward()<cr>
+	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> ; <ESC>:call LineJumpForwardMove()<cr>
 
-	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> b <ESC>:call LineJumpBackward()<cr>
+	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> b <ESC>:call LineJumpBackwardSelect()<cr>
 
-	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> , <ESC>:call LineJumpSubBackward()<cr>
+	autocmd BufEnter NERD_tree_\d\+ nnoremap <buffer> <nowait> <silent> , <ESC>:call LineJumpBackwardMove()<cr>
 augroup END
 
 augroup LineJumpTagbar
-	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> f <ESC>:call LineJumpForward()<cr>
+	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> f <ESC>:call LineJumpForwardSelect()<cr>
 
-	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> ; <ESC>:call LineJumpSubForward()<cr>
+	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> ; <ESC>:call LineJumpForwardMove()<cr>
 
-	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> b <ESC>:call LineJumpBackward()<cr>
+	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> b <ESC>:call LineJumpBackwardSelect()<cr>
 
-	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> , <ESC>:call LineJumpSubBackward()<cr>
+	autocmd BufEnter __Tagbar__ nnoremap <buffer> <nowait> <silent> , <ESC>:call LineJumpBackwardMove()<cr>
 augroup END
 
 
@@ -113,84 +107,84 @@ function! Linejumpfirstword()
 endfunction
 
 
-function! LineJumpSelectMethodByMotion(matchlinelist)
-		let hl_coords = []
-		for mline in a:matchlinelist
-			call add(hl_coords, '\%' . mline[0] . 'l\%' . (mline[1]+1) . 'c')
-		endfor
-
-		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
-		redraw
-
-		let charget = '#'
-		let current_index = 0
-		let max_index = len(a:matchlinelist) - 1
-		let newpos = getpos('.')
-		let newpos[1] = a:matchlinelist[current_index][0] "line number
-		let newpos[2] = a:matchlinelist[current_index][1] + 1 "column number
-		call setpos('.', newpos)
-		let select_coord = []
-		call add(select_coord, '\%' . newpos[1] . 'l\%' . newpos[2] . 'c')
-		let target_select_id = matchadd(s:LineJumpSelectGroup, join(select_coord, '\|'), 200)
-		redraw
-		while 9
-			"let key = getchar()
-			let key = PeekCharTimeout(g:LineJumpPeepKeyTimeout)
-			if key == 0
-				"let charget = ''
-				"echo "peek timeout"
-				break
-			endif
-			let key = getchar()
-			let char = nr2char(key)
-			if char == 'j'
-				let  current_index += 1
-				if current_index > max_index
-					let current_index = 0
-				endif
-			elseif char == 'k'
-				let  current_index -= 1
-				if current_index < 0
-					let current_index = max_index
-				endif
-			elseif char == 'm'
-				let  current_index = max_index/2
-			elseif char == 'l'
-				let  current_index = max_index
-			elseif char == 'h'
-				let  current_index = 0
-			else
-				let charget = char
-				break
-			endif
-			let newpos = getpos('.')
-			let newpos[1] = a:matchlinelist[current_index][0] "line number
-			let newpos[2] = a:matchlinelist[current_index][1] + 1 "column number
-			call setpos('.', newpos)
-			if exists('target_select_id')
-				call matchdelete(target_select_id)
-			endif
-			let select_coord = []
-			call add(select_coord, '\%' . newpos[1] . 'l\%' . newpos[2] . 'c')
-			let target_select_id = matchadd(s:LineJumpSelectGroup, join(select_coord, '\|'), 200)
-			redraw
-			"echo "char " . char
-		endwhile
-
-		if exists('target_select_id')
-			call matchdelete(target_select_id)
-		endif
-
-		if exists('target_hl_id')
-			call matchdelete(target_hl_id)
-		endif
-
-		"if charget != ' ' && charget != ''
-			"echo 'charget ' . charget
-			"execute "normal " . charget
-		"endif
-		"return charget
-endfunction
+"function! LineJumpSelectMethodByMotion(matchlinelist)
+"		let hl_coords = []
+"		for mline in a:matchlinelist
+"			call add(hl_coords, '\%' . mline[0] . 'l\%' . (mline[1]+1) . 'c')
+"		endfor
+"
+"		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
+"		redraw
+"
+"		let charget = '#'
+"		let current_index = 0
+"		let max_index = len(a:matchlinelist) - 1
+"		let newpos = getpos('.')
+"		let newpos[1] = a:matchlinelist[current_index][0] "line number
+"		let newpos[2] = a:matchlinelist[current_index][1] + 1 "column number
+"		call setpos('.', newpos)
+"		let select_coord = []
+"		call add(select_coord, '\%' . newpos[1] . 'l\%' . newpos[2] . 'c')
+"		let target_select_id = matchadd(s:LineJumpSelectGroup, join(select_coord, '\|'), 200)
+"		redraw
+"		while 9
+"			"let key = getchar()
+"			let key = PeekCharTimeout(g:LineJumpPeepKeyTimeout)
+"			if key == 0
+"				"let charget = ''
+"				"echo "peek timeout"
+"				break
+"			endif
+"			let key = getchar()
+"			let char = nr2char(key)
+"			if char == 'j'
+"				let  current_index += 1
+"				if current_index > max_index
+"					let current_index = 0
+"				endif
+"			elseif char == 'k'
+"				let  current_index -= 1
+"				if current_index < 0
+"					let current_index = max_index
+"				endif
+"			elseif char == 'm'
+"				let  current_index = max_index/2
+"			elseif char == 'l'
+"				let  current_index = max_index
+"			elseif char == 'h'
+"				let  current_index = 0
+"			else
+"				let charget = char
+"				break
+"			endif
+"			let newpos = getpos('.')
+"			let newpos[1] = a:matchlinelist[current_index][0] "line number
+"			let newpos[2] = a:matchlinelist[current_index][1] + 1 "column number
+"			call setpos('.', newpos)
+"			if exists('target_select_id')
+"				call matchdelete(target_select_id)
+"			endif
+"			let select_coord = []
+"			call add(select_coord, '\%' . newpos[1] . 'l\%' . newpos[2] . 'c')
+"			let target_select_id = matchadd(s:LineJumpSelectGroup, join(select_coord, '\|'), 200)
+"			redraw
+"			"echo "char " . char
+"		endwhile
+"
+"		if exists('target_select_id')
+"			call matchdelete(target_select_id)
+"		endif
+"
+"		if exists('target_hl_id')
+"			call matchdelete(target_hl_id)
+"		endif
+"
+"		"if charget != ' ' && charget != ''
+"			"echo 'charget ' . charget
+"			"execute "normal " . charget
+"		"endif
+"		"return charget
+"endfunction
 
 function! PeekCharTimeout(milli) 
     " non-consuming key-wait with timeout 
@@ -258,7 +252,7 @@ endfunction
 let b:subjump_matchlist = []
 let b:subjump_matchlist_pos = -1
 
-function! LineJumpSubForward()
+function! LineJumpForwardMove()
 	if g:LineJumpSelectMethod ==2 || (g:LineJumpSelectMethod == 3 && g:LineJumpSmartSelectMethod == 1)
 	else
 		return
@@ -276,7 +270,7 @@ function! LineJumpSubForward()
 	call setpos('.', newpos)
 endfunction
 
-function! LineJumpSubBackward()
+function! LineJumpBackwardMove()
 	if g:LineJumpSelectMethod ==2 || (g:LineJumpSelectMethod == 3 && g:LineJumpSmartSelectMethod == 1)
 	else
 		return
@@ -295,16 +289,47 @@ function! LineJumpSubBackward()
 	call setpos('.', newpos)
 endfunction
 
-function! LineJumpForward()
+function! LineJumpForwardSelect()
 	let startline = line(".")
 	let endline = line("w$")
 	call LineJumpRange(startline, endline)
 endfunction
 
-function! LineJumpBackward()
+function! LineJumpBackwardSelect()
 	let startline = line("w0")
 	let endline = line(".")
 	call LineJumpRange(startline, endline)
+endfunction
+
+let g:LineJumpSameCharLines = 4
+
+"return a list indicate sub select pos
+"[line, column, char]
+function! FindSameChars(selectlist)
+	"first, find the longest chars that make the lines of
+	"matching not more than g:LineJumpSameCharLines
+	let scanPos = 0
+	let scanChars = 1
+	while 9
+		let match = 0
+		for line in selectlist
+			if matchstr
+
+		endfor
+	endwhile
+
+	"than, find each lines start character(highlight character)
+	"
+endfunction
+
+"skip the same head characters in current line, search forward
+function! LineJumpForwardSubSelect()
+
+endfunction
+
+"skip the same head character in current line, search backward
+function! LineJumpBackwardSubSelect()
+
 endfunction
 
 function! LineJumpPage()
@@ -387,10 +412,8 @@ function! LineJumpRange(startline, endline)
 	else
 		if g:LineJumpSelectMethod == 0
 			call LineJumpSelectMethodByNumberAlpha(matchlinelist, startline,charget)
-		elseif g:LineJumpSelectMethod == 1
-			call LineJumpSelectMethodByMotion(matchlinelist)
 		elseif g:LineJumpSelectMethod == 2
-			"select by LineJumpSubForward(), LineJumpPageBackward()
+			"select by LineJumpForwardMove(), LineJumpPageBackward()
 			let linefound = matchlinelist[0][0]
 			let newpos = getpos('.')
 			let newpos[2] = matchlinelist[0][1] + 1
@@ -398,23 +421,6 @@ function! LineJumpRange(startline, endline)
 			call setpos('.', newpos)
 			let b:subjump_matchlist = matchlinelist[:]
 			let b:subjump_matchlist_pos = 0
-		else "if g:LineJumpSelectMethod == 3
-			if len(matchlinelist) >= g:LineJumpSmartSelectNumber
-				call LineJumpSelectMethodByNumberAlpha(matchlinelist, startline,charget)
-			else
-				if g:LineJumpSmartSelectMethod == 0
-					call LineJumpSelectMethodByMotion(matchlinelist)
-				else "if g:LineJumpSmartSelectMethod == 1
-					"select by LineJumpSubForward(), LineJumpPageBackward()
-					let linefound = matchlinelist[0][0]
-					let newpos = getpos('.')
-					let newpos[2] = matchlinelist[0][1] + 1
-					let newpos[1] = linefound
-					call setpos('.', newpos)
-					let b:subjump_matchlist = matchlinelist[:]
-					let b:subjump_matchlist_pos = 0
-				endif
-			endif
 		endif
 	endif
 
