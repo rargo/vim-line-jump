@@ -301,35 +301,208 @@ function! LineJumpBackwardSelect()
 	call LineJumpRange(startline, endline)
 endfunction
 
-let g:LineJumpSameCharLines = 4
+let g:SameCharLines = 4
+
+let g:TestLine = ["v", "vimaa1","vimab2k","vimac3","vimad4","vim","vimb","vimb","vimb","vimc1","vimc2","vimc3","vimc4a","vimc5b"]
 
 "return a list indicate sub select pos
 "[line, column, char]
 function! FindSameChars(selectlist)
 	"first, find the longest chars that make the lines of
 	"matching not more than g:LineJumpSameCharLines
-	let scanPos = 0
-	let scanChars = 1
-	while 9
-		let match = 0
-		for line in selectlist
-			if matchstr
+	let selectlist_len = len(a:selectlist)
+	let scanlist = range(selectlist_len)
+	let i = 0
+	for l in scanlist
+		let scanlist[i] = []
+		let i = i+1
+	endfor
 
+	"stop when scanlist all index fill
+	let scanColumn = 0
+	while 9
+		"fill the index in scanlist:
+		"1. when the line has no more character
+		"2. when no sequence line has the same character more than g:SameCharLines
+		let i = 0
+		for s in scanlist
+			if empty(s)
+				break
+			endif
+			let i = i+1
 		endfor
+
+		if i == selectlist_len
+			"echo "@@@@@@@@@@list all scan finish@@@@@@@@@@"
+			"echo scanlist
+			break
+		endif
+
+		let scanIndex = i
+		let lastIndex = -1
+		let startI = scanIndex
+		let sameCharCount = 1
+		let lastChar = ''
+		let restartScan = 0
+		"echo "=====start scan index: " . scanIndex . " column:" . scanColumn . "====="
+		"echo "lastChar:" . lastChar
+		for i in range(scanIndex,selectlist_len-1)
+
+			"skip already in scanlist
+			if !empty(scanlist[i])
+				""echo "skip " . i
+				continue
+			endif
+
+			let line = a:selectlist[i]
+			let char = line[scanColumn]
+			if len(line) == scanColumn + 1
+				"add the line to scanlist
+				let newlist = [scanColumn,char]
+				let scanlist[i] = newlist[:]
+				"echo "add line " . i . " to scanlist(line exhaust)"
+				"echo "char " . char . " column:" . scanColumn
+
+				let restartScan = 1
+				break
+
+			else
+				if char == lastChar
+					let sameCharCount = sameCharCount + 1
+					"echo "sameCharCount: " . sameCharCount . "(add), line:" . i ", char:" . char . ", lastChar:" . lastChar
+				else
+					if lastChar != '' "not the first line compare the first line
+						if sameCharCount < g:SameCharLines
+							"find some not match line, add it to scanlist
+							"echo "sameCharCount: " . sameCharCount
+							for j in range(startI, i-1)
+								if !empty(scanlist[j])
+									continue
+								endif
+								let char = a:selectlist[j][scanColumn]
+								let newlist = [scanColumn,char]
+								let scanlist[j] = newlist[:]
+								"echo "add line " . j . " to scanlist(diff)"
+								"echo "char " . char . " column:" . scanColumn
+							endfor
+
+							let restartScan = 1
+							break
+						else
+							let lastChar = char
+							let startI = i "reset position
+							let sameCharCount = 1 "different char found, reset counter
+						endif
+					else
+						let lastChar = char
+					endif
+				endif
+			endif
+			let lastIndex = i
+		endfor
+
+		if restartScan == 0
+			"add tail lines
+			if sameCharCount < g:SameCharLines
+				for j in range(startI, i)
+					"echo "add line " . j . " to scanlist(tail lines)"
+					let char = line[scanColumn]
+					let newlist = [scanColumn,char]
+					let scanlist[j] = newlist[:]
+					"echo "char " . char . " column:" . scanColumn
+				endfor
+			endif
+
+			let scanColumn = scanColumn + 1
+		endif
 	endwhile
 
-	"than, find each lines start character(highlight character)
-	"
+	return scanlist
+endfunction
+
+function! LJforward()
+	call LineJumpForwardSubSelect()
+endfunction
+
+function! LJbackward()
+	call LineJumpBackwardSubSelect()
 endfunction
 
 "skip the same head characters in current line, search forward
 function! LineJumpForwardSubSelect()
-
+	let startline = line(".")
+	let endline = line("w$")
+	call LineJumpSubSelect(startline, endline)
 endfunction
 
 "skip the same head character in current line, search backward
 function! LineJumpBackwardSubSelect()
+	let startline = line("w0")
+	let endline = line(".")
+	call LineJumpSubSelect(startline, endline)
+endfunction
 
+function! LineJumpSubSelect(startline, endline)
+	echo "LineJumpSubSelect"
+	call LineJumpLoadColor(s:target_select_defaults,s:LineJumpSelectGroup)
+	call LineJumpLoadColor(s:target_hl_defaults,s:LineJumpHiGroup)
+
+	let old_modifiable = &modifiable
+    "setlocal buftype=nofile
+    setlocal modifiable
+
+	let old_undolevels = &undolevels
+	set undolevels=-1
+
+	let startline = a:startline
+	let endline = a:endline
+
+	let g:linelist = getline(startline, endline)
+	let scanlist = FindSameChars(g:linelist)
+	echo scanlist
+	call getchar()
+	let lineindex = startline
+	let hl_coords = []
+	let i = 0
+	for l in scanlist
+		call add(hl_coords, '\%' . (i+startline) . 'l\%' . (l[0]+1) . 'c')
+		let i = i+1
+	endfor
+
+	let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
+
+	redraw
+
+	"XXX
+	let charget = '#'
+	while 9
+		let key = getchar()
+		let char = nr2char(key)
+		break
+		"let i = 0
+		"for l in scanlist
+			"if char == l[1]
+				"break
+			"endif
+			"let i = i+1
+		"endfor
+	endwhile
+
+	if exists('target_hl_id')
+		call matchdelete(target_hl_id)
+	endif
+
+	"let newpos = getpos('.')
+	"let newpos[2] = scanlist[i][0] + 1
+	"let newpos[1] = startline+i
+	"call setpos('.', newpos)
+
+	let &undolevels = old_undolevels
+	"unlet old_undolevels
+
+	if old_modifiable == 0
+		setlocal nomodifiable
+	endif
 endfunction
 
 function! LineJumpPage()
