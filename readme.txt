@@ -1,7 +1,7 @@
 When in Tagbar and NERDTree, It's not convenient jump lines using 'j','k'.
 LineJump is written to make it easier
 
-First, add to following default map to your .vimrc
+First, add the following default map to your .vimrc
     "LineJump NERDTree key map
     augroup LineJumpNerdTree
         "I find nerdtree's f map to something not that useful!
