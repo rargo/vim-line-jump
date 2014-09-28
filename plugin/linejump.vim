@@ -8,7 +8,6 @@
 if !exists("g:LineJumpSelectMethod")
 	let g:LineJumpSelectMethod = 0
 endif
-let g:LineJumpSelectMethod = 0
 
 "if you want to select line only visable in the window, set it to 1
 "default as select will search the whole buffer
@@ -692,6 +691,9 @@ function! LineJumpSelectByNumberAlpha(matchlinelist, startline, charget)
 		call add(hl_coords, '\%' . mline[0] . 'l\%' . (mline[1]+1) . 'c')
 		let alpha_use_dict[s:alpha_forward_list[ki]] = mline
 		let ki += 1
+		if ki >= len(alpha_forward_list)
+			break
+		endif
 	endfor
 
 	let target_hl_id = matchadd(s:LineJumpSelectGroup, join(hl_coords, '\|'), 100)
