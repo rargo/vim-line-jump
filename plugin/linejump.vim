@@ -8,25 +8,28 @@
 if !exists("g:LineJumpSelectMethod")
 	let g:LineJumpSelectMethod = 0
 endif
+let g:LineJumpSelectMethod = 0
 
 "if you want to select line only visable in the window, set it to 1
 "default as select will search the whole buffer
+"only valid when g:LineJumpSelectMethod == 0
 if !exists("g:LineJumpSelectInVisable")
 	let g:LineJumpSelectInVisable = 0
 endif
-let g:LineJumpSelectInVisable = 0
 
 "highlight in LineJump moves, default as off
 if !exists("g:LineJumpMoveHighlight")
 	let g:LineJumpMoveHighlight = 0
 endif
 
-let s:LineJumpCharacterDict = {}
+let b:LineJumpCharacterDict = {}
 
 let s:alpha_forward_list = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0','1','2','3','4','5','6','7','8','9']
 
+"if your monitor has more than 62 lines,
+"Hi, tuhao, can we be friends?
 let s:alpha_line_map = {'a':0,'b':1,'c':2,'d':3,'e':4,'f':5,'g':6,'h':7,'i':8,'j':9,'k':10,'l':11,'m':12,'n':13,'o':14,'p':15,'q':16,'r':17,'s':18,'t':19,'u':20,'v':21,'w':22,'x':23,'y':24,'z':25,'A':26,'B':27,'C':28,'D':29,'E':30,'F':31,'G':32,'H':33,'I':34,'J':35,'K':36,'L':37,'M':38,'N':39,'O':40,'P':41,'Q':42,'R':43,'S':44,'T':45,'U':46,'V':47,'W':48,'X':49,'Y':50,'Z':51,'0':52,'1':53,'2':54,'3':55,'4':56,'5':57,'6':58,'7':59,'8':60,'9':61}
-"let g:linelist = []
+"let s:linelist = []
 
 "borrow from easymotion
 let s:target_hl_defaults = {
@@ -90,6 +93,7 @@ function! LineJumpPeekCharTimeout(milli)
 endfun 
 
 let b:subjump_matchlist = []
+let b:subjump_forward = -1
 
 function! LineJumpMoveTop()
 	if g:LineJumpSelectMethod != 0
@@ -226,8 +230,16 @@ function! LineJumpMoveForward()
 
 	let i = 0
 	for l in b:subjump_matchlist
-		if b:subjump_matchlist[i][0] > line
-			break
+		if b:subjump_forward != 0
+			"forward jump
+			if b:subjump_matchlist[i][0] > line
+				break
+			endif
+		else
+			"backward jump
+			if b:subjump_matchlist[i][0] < line
+				break
+			endif
 		endif
 		let i = i + 1
 	endfor
@@ -277,8 +289,14 @@ function! LineJumpMoveBackward()
 
 	let i = len(b:subjump_matchlist) - 1
 	for l in b:subjump_matchlist
-		if b:subjump_matchlist[i][0] < line
-			break
+		if b:subjump_forward != 0
+			if b:subjump_matchlist[i][0] < line
+				break
+			endif
+		else
+			if b:subjump_matchlist[i][0] > line
+				break
+			endif
 		endif
 		let i = i - 1
 	endfor
@@ -304,7 +322,7 @@ function! LineJumpMoveBackward()
 endfunction
 
 function! LineJumpSelectForward()
-	if g:LineJumpSelectInVisable == 0
+	if g:LineJumpSelectMethod == 0 && g:LineJumpSelectInVisable == 0
 		let endline = line("$")
 	else
 		let endline = line("w$")
@@ -313,11 +331,11 @@ function! LineJumpSelectForward()
 	if startline > endline
 		return
 	endif
-	call LineJumpSelect(startline, endline)
+	call LineJumpSelect(startline, endline, 1)
 endfunction
 
 function! LineJumpSelectBackward()
-	if g:LineJumpSelectInVisable == 0
+	if g:LineJumpSelectMethod == 0 && g:LineJumpSelectInVisable == 0
 		let startline = 1
 	else
 		let startline = line("w0")
@@ -326,7 +344,7 @@ function! LineJumpSelectBackward()
 	if endline < startline
 		return
 	endif
-	call LineJumpSelect(startline, endline)
+	call LineJumpSelect(startline, endline, 0)
 endfunction
 
 "let g:SameCharLines = 4
@@ -485,8 +503,8 @@ endfunction
 	"let startline = a:startline
 	"let endline = a:endline
 
-	"let g:linelist = getline(startline, endline)
-	"let scanlist = FindSameChars(g:linelist)
+	"let s:linelist = getline(startline, endline)
+	"let scanlist = FindSameChars(s:linelist)
 	"echo scanlist
 	"call getchar()
 	"let lineindex = startline
@@ -533,18 +551,23 @@ endfunction
 	"endif
 "endfunction
 
+function! LineJumpPage()
+	let startline = line("w0")
+	let endline = line("w$")
+	call LineJumpSelect(startline, endline, 0)
 "function! LineJumpPage()
 	"let startline = line("w0")
 	"let endline = line("w$")
 	"call LineJumpSelect(startline, endline)
 "endfunction
+endfunction
 
-function! LineJumpSelect(startline, endline)
+function! LineJumpSelect(startline, endline, forward)
 
 	call LineJumpLoadColor(s:target_select_defaults,s:LineJumpSelectGroup)
 	call LineJumpLoadColor(s:target_hl_defaults,s:LineJumpHiGroup)
 
-	let s:LineJumpCharacterDict = {}
+	let b:LineJumpCharacterDict = {}
 	let old_modifiable = &modifiable
     "setlocal buftype=nofile
     setlocal modifiable
@@ -555,54 +578,79 @@ function! LineJumpSelect(startline, endline)
 	let startline = a:startline
 	let endline = a:endline
 
-	try
-		let g:linelist = getline(startline, endline)
-		let lineindex = startline
-		let hl_coords = []
-		for line in g:linelist
-			let pos = match(line, '\w')
-			if pos != -1
-				let c = matchstr(line,'\w')
-				"echo "c" . c
-				let pos_list = [lineindex, pos]
-				if !has_key(s:LineJumpCharacterDict,c)
-					let s:LineJumpCharacterDict[c] = []
-				endif
-				call add(s:LineJumpCharacterDict[c],pos_list)
-				"call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
-				call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
-			endif
-			let lineindex += 1
+	let s:linelist = getline(startline, endline)
+	if g:LineJumpSelectMethod == 0 && a:forward == 0
+		"backward jump, reverse list
+		let savelinelist = s:linelist[:]
+		let i = 0
+		let lasti = len(savelinelist) - 1
+		for l in savelinelist
+			let s:linelist[i] = savelinelist[lasti - i]
+			let i = i + 1
 		endfor
+		"echo s:linelist
+		"call getchar()
+	endif
 
-		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
-
-		redraw
-
-		"XXX
-		let charget = '#'
-		while 9
-			let key = getchar()
-			let char = nr2char(key)
-			"echo "char " . char
-			"TODO handle error key 
-			if has_key(s:LineJumpCharacterDict,char)
-				let charget = char
-				break
+	if g:LineJumpSelectMethod == 0 && a:forward == 0
+		let lineindex = endline
+	else
+		let lineindex = startline
+	endif
+	let hl_coords = []
+	for line in s:linelist
+		let pos = match(line, '\w')
+		if pos != -1
+			let c = matchstr(line,'\w')
+			"echo "c" . c
+			let pos_list = [lineindex, pos]
+			if !has_key(b:LineJumpCharacterDict,c)
+				let b:LineJumpCharacterDict[c] = []
 			endif
-			"echo "linejump " . linejump
-		endwhile
-	catch
-	finally
-		if exists('target_hl_id')
-			call matchdelete(target_hl_id)
+			call add(b:LineJumpCharacterDict[c],pos_list)
+			"call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
+			call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
 		endif
+		if g:LineJumpSelectMethod == 0 && a:forward == 0
+			let lineindex -= 1
+		else
+			let lineindex += 1
+		endif
+	endfor
 
+	if g:LineJumpSelectMethod == 1 && len(b:LineJumpCharacterDict) == 1
+		"small optimuse, if only has one character, skip getkey
+		let charget =  keys(b:LineJumpCharacterDict)[0]
+	else
+		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
 		redraw
-	endtry
+		try
+			let charget = '#'
+			while 9
+				let key = getchar()
+				let char = nr2char(key)
+				"echo "char " . char
+				if has_key(b:LineJumpCharacterDict,char)
+					let charget = char
+					break
+				endif
+				"echo "linejump " . linejump
+			endwhile
+		catch
+			"echo "Abort"
+			let &undolevels = old_undolevels
+			if old_modifiable == 0
+				setlocal nomodifiable
+			endif
+			return
+		finally
+			call matchdelete(target_hl_id)
+			redraw
+		endtry
+	endif
 
 	"see if there more than one match line
-	let matchlinelist = s:LineJumpCharacterDict[charget]
+	let matchlinelist = b:LineJumpCharacterDict[charget]
 	"echo len(matchlinelist)
 	if g:LineJumpSelectMethod == 1
 		call LineJumpSelectByNumberAlpha(matchlinelist, startline,charget)
@@ -614,19 +662,8 @@ function! LineJumpSelect(startline, endline)
 		let newpos[1] = linefound
 		call setpos('.', newpos)
 		let b:subjump_matchlist = matchlinelist[:]
+		let b:subjump_forward = a:forward
 	endif
-
-	"let bufname = bufname('%')
-	""echo bufname
-	"for pattern in g:line_jump_post_action_priority
-		""echo "pattern:". pattern
-		"if match(bufname, pattern,0) != -1
-		""if match(bufname, ".*",0) != -1
-			""echo "match pattern:". pattern
-			"execute "" . g:line_jump_post_action[pattern]
-			"break
-		"endif
-	"endfor
 
 	let &undolevels = old_undolevels
 
@@ -637,11 +674,19 @@ endfunction
 
 function! LineJumpSelectByNumberAlpha(matchlinelist, startline, charget)
 
+	if len(a:matchlinelist) == 1
+		let newpos = getpos('.')
+		let newpos[1] = a:matchlinelist[0][0]
+		let newpos[2] = a:matchlinelist[0][1] + 1
+		call setpos('.', newpos)
+		return
+	endif
+
 	let ki = 0
 	let alpha_use_dict = {}
 	let hl_coords = []
 	for mline in a:matchlinelist
-		let line = g:linelist[mline[0]-a:startline]
+		let line = s:linelist[mline[0]-a:startline]
 		let linereplace = substitute(line,a:charget,s:alpha_forward_list[ki],"") 
 		call setline(mline[0],linereplace)
 		call add(hl_coords, '\%' . mline[0] . 'l\%' . (mline[1]+1) . 'c')
@@ -649,11 +694,10 @@ function! LineJumpSelectByNumberAlpha(matchlinelist, startline, charget)
 		let ki += 1
 	endfor
 
-	let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
+	let target_hl_id = matchadd(s:LineJumpSelectGroup, join(hl_coords, '\|'), 100)
 	redraw
 
 	try
-		"TODO handle error key 
 		let charget = '#'
 		while 9
 			let key = getchar()
@@ -673,16 +717,12 @@ function! LineJumpSelectByNumberAlpha(matchlinelist, startline, charget)
 		call setpos('.', newpos)
 	catch
 	finally
-		if exists('target_hl_id')
-			call matchdelete(target_hl_id)
-		endif
-
+		call matchdelete(target_hl_id)
 		"restore line
 		for mline in a:matchlinelist
 			"echo "match pattern:". pattern
-			call setline(mline[0],g:linelist[mline[0]-a:startline])
+			call setline(mline[0],s:linelist[mline[0]-a:startline])
 		endfor
-
 		redraw
 	endtry
 endfunction
