@@ -51,8 +51,8 @@ Global option:
 
     g:LineJumpSelectInVisable = 0
         only valid when g:LineJumpSelectMethod == 0, 
-        if it is not 0, select will extend to the whole buffer,
-        not just lines visabled in the window
+        if it is not 0, select just lines visabled in the window
+		default is 0, select will extend to the whole buffer
 
     g:LineJumpMoveHighlight = 0
         only valid when g:LineJumpSelectMethod == 0, 
