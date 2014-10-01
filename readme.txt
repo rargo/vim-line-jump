@@ -52,11 +52,18 @@ Global option:
     g:LineJumpSelectInVisable = 0
         only valid when g:LineJumpSelectMethod == 0, 
         if it is not 0, select just lines visabled in the window
-		default is 0, select will extend to the whole buffer
+		default is 0, select will scan the whole buffer
 
     g:LineJumpMoveHighlight = 0
         only valid when g:LineJumpSelectMethod == 0, 
-        if it is not 0, when move using ';',',', the candidate lines will highlight
+        if it is not 0, when move using ';',',', the candidate lines will be highlighted
+		default is 0, the candidate lines will not be highlighted
+
+Please note:
+	default 'f' map key conflicts with NERDTree key maps.
+	It cause when start vim, enter NERDTree, 'f' key is not working,
+	you have to leave NERDTree window, enter it again,
+	to make 'f' key work.
 
 rargo.m@gmail.com 2014.09.28
 Distributed under the same terms as Vim itself.
