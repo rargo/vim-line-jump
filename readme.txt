@@ -1,3 +1,8 @@
+So sorry, guys, It not works in vim7.3
+and my vim is compile from source, version7.4, Include patchs 1-402
+official gvim7.4 works, I don't know other official release 7.4 works or not.
+I am trying to find out why.
+
 When in Tagbar and NERDTree, It's not convenient jump lines using 'j','k'.
 LineJump is written to make it easier
 
