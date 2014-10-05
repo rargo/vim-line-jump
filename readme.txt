@@ -1,8 +1,3 @@
-So sorry, guys, It not works in vim7.3
-and my vim is compile from source, version7.4, Include patchs 1-402
-official gvim7.4 works, I don't know other official release 7.4 works or not.
-I am trying to find out why.
-
 When in Tagbar and NERDTree, It's not convenient jump lines using 'j','k'.
 LineJump is written to make it easier
 
@@ -65,10 +60,15 @@ Global option:
 		default is 0, the candidate lines will not be highlighted
 
 Please note:
+	It not works in vim7.3, I haven't try any version under 7.3.
+	It works in vim7.4(official vim7.4 release), and version 7.4.430(compiled from source)
+
 	default 'f' map key conflicts with NERDTree key maps.
 	It cause when start vim, enter NERDTree, 'f' key is not working,
 	you have to leave NERDTree window, enter it again,
 	to make 'f' key work.
+
+
 
 rargo.m@gmail.com 2014.09.28
 Distributed under the same terms as Vim itself.
