@@ -1,7 +1,10 @@
 When in Tagbar and NERDTree, It's not convenient jump lines using 'j','k'.
 LineJump is written to make it easier
 
-First, add the following default map to your .vimrc
+First, add the following default setting to your .vimrc
+	"default g:NERDTreeMapToggleFilters key map is 'f', change it to some key else,
+	"so below 'f' key map works when NERDTree first open
+	let g:NERDTreeMapToggleFilters = "0"
     "LineJump NERDTree key map
     augroup LineJumpNerdTree
         "I find nerdtree's f map to something not that useful!
@@ -61,14 +64,10 @@ Global option:
 
 Please note:
 	It not works in vim7.3, I haven't try any version under 7.3.
-	It works in vim7.4(official vim7.4 release), and version 7.4.430(compiled from source)
+	I have test it on official vim7.4 release, and version 7.4.430(compiled from source), and other 7.4 version should works too.
 
-	default 'f' map key conflicts with NERDTree key maps.
-	It cause when start vim, enter NERDTree, 'f' key is not working,
-	you have to leave NERDTree window, enter it again,
-	to make 'f' key work.
+todo:
+	1. add movment to jump list
+	2. add ignore case
+	3. add smart line select
 
-
-
-rargo.m@gmail.com 2014.09.28
-Distributed under the same terms as Vim itself.
