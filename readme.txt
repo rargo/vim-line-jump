@@ -2,9 +2,9 @@ When in Tagbar and NERDTree, It's not convenient jump lines using 'j','k'.
 LineJump is written to make it easier
 
 First, add the following default setting to your .vimrc
-	"default g:NERDTreeMapToggleFilters key map is 'f', change it to some key else,
-	"so below 'f' key map works when NERDTree first open
-	let g:NERDTreeMapToggleFilters = "0"
+    "default g:NERDTreeMapToggleFilters key map is 'f', change it to some key else,
+    "so below 'f' key map works when NERDTree first open
+    let g:NERDTreeMapToggleFilters = "0"
     "LineJump NERDTree key map
     augroup LineJumpNerdTree
         "I find nerdtree's f map to something not that useful!
@@ -55,19 +55,20 @@ Global option:
     g:LineJumpSelectInVisable = 0
         only valid when g:LineJumpSelectMethod == 0, 
         if it is not 0, select just lines visabled in the window
-		default is 0, select will scan the whole buffer
+        default is 0, select will scan the whole buffer
 
     g:LineJumpMoveHighlight = 0
         only valid when g:LineJumpSelectMethod == 0, 
         if it is not 0, when move using ';',',', the candidate lines will be highlighted
-		default is 0, the candidate lines will not be highlighted
+        default is 0, the candidate lines will not be highlighted
 
 Please note:
-	It not works in vim7.3, I haven't try any version under 7.3.
-	I have test it on official vim7.4 release, and version 7.4.430(compiled from source), and other 7.4 version should works too.
+    It not works in vim7.3, I haven't try any version under 7.3.
+    I have test it on official vim7.4 release, and version 7.4.430(compiled from source),
+    and other 7.4 version should works too.
 
 todo:
-	1. add movment to jump list
-	2. add ignore case
-	3. add smart line select
+    1. add movment to jump list
+    2. add ignore case
+    3. add smart line select
 
