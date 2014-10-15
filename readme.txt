@@ -69,6 +69,5 @@ Please note:
 
 todo:
     1. add movment to jump list
-    2. add ignore case
-    3. add smart line select
+    2. add smart line select
 
