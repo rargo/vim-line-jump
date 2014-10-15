@@ -21,6 +21,11 @@ if !exists("g:LineJumpMoveHighlight")
 	let g:LineJumpMoveHighlight = 0
 endif
 
+"ignore case
+if !exists("g:LineJumpSelectIgnoreCase")
+	let g:LineJumpSelectIgnoreCase = 0
+endif
+
 let b:LineJumpCharacterDict = {}
 
 let s:alpha_forward_list = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0','1','2','3','4','5','6','7','8','9']
@@ -601,6 +606,9 @@ function! LineJumpSelect(startline, endline, forward)
 		let pos = match(line, '\w')
 		if pos != -1
 			let c = matchstr(line,'\w')
+			if g:LineJumpSelectIgnoreCase != 0
+				let c = tolower(c)
+			endif
 			"echo "c" . c
 			let pos_list = [lineindex, pos]
 			if !has_key(b:LineJumpCharacterDict,c)
@@ -628,6 +636,9 @@ function! LineJumpSelect(startline, endline, forward)
 			while 9
 				let key = getchar()
 				let char = nr2char(key)
+				if g:LineJumpSelectIgnoreCase != 0
+					let char = tolower(char)
+				endif
 				"echo "char " . char
 				if has_key(b:LineJumpCharacterDict,char)
 					let charget = char
