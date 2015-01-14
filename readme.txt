@@ -46,9 +46,14 @@ Here is how it works:
             key to jump to the line
 
 Global option:
+	g:LineJumpSelectIgnoreCase
+		ignore case when select,default is 0, case sensitive
+		set to 1 to ignore case when select.
+
 	g:LineJumpSelectSmartCase 
-        enable smart cast, defualt is 0, disabled,
-		this option overides g:LineJumpSelectIgnoreCase
+        enable smart case when select, defualt is 0, disabled,
+		set to 1 to enable smart case when select,
+		if set to 1, this option overides g:LineJumpSelectIgnoreCase
 
     g:LineJumpSelectMethod
         define sub select way, default is 0
@@ -56,15 +61,16 @@ Global option:
             need to map these two functions to some key
         1: sub select by press number and alpha
 
-    g:LineJumpSelectInVisable = 0
+    g:LineJumpSelectInVisable
         only valid when g:LineJumpSelectMethod == 0, 
         if it is not 0, select just lines visabled in the window
         default is 0, select will scan the whole buffer
 
-    g:LineJumpMoveHighlight = 0
+    g:LineJumpMoveHighlight
         only valid when g:LineJumpSelectMethod == 0, 
         if it is not 0, when move using ';',',', the candidate lines will be highlighted
         default is 0, the candidate lines will not be highlighted
+
 
 Please note:
     It not works in vim7.3, I haven't try any version under 7.3.
