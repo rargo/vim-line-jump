@@ -26,7 +26,15 @@ if !exists("g:LineJumpSelectIgnoreCase")
 	let g:LineJumpSelectIgnoreCase = 0
 endif
 
+"smart case, smartcase overides ignore case
+if !exists("g:LineJumpSelectSmartCase")
+	let g:LineJumpSelectSmartCase = 0
+endif
+
+"{line's first alpha:[line number, column number]}, ie: {'a':[1,1]}
 let b:LineJumpCharacterDict = {}
+let b:LineJumpCharacterDictLowerCase = {}
+let b:LineJumpCharacterDictNormalCase = {}
 
 let s:alpha_forward_list = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0','1','2','3','4','5','6','7','8','9']
 
@@ -571,7 +579,8 @@ function! LineJumpSelect(startline, endline, forward)
 	call LineJumpLoadColor(s:target_select_defaults,s:LineJumpSelectGroup)
 	call LineJumpLoadColor(s:target_hl_defaults,s:LineJumpHiGroup)
 
-	let b:LineJumpCharacterDict = {}
+	let b:LineJumpCharacterDictNormalCase = {}
+	let b:LineJumpCharacterDictLowerCase = {}
 	let old_modifiable = &modifiable
     "setlocal buftype=nofile
     setlocal modifiable
@@ -606,15 +615,20 @@ function! LineJumpSelect(startline, endline, forward)
 		let pos = match(line, '\w')
 		if pos != -1
 			let c = matchstr(line,'\w')
-			if g:LineJumpSelectIgnoreCase != 0
-				let c = tolower(c)
-			endif
 			"echo "c" . c
 			let pos_list = [lineindex, pos]
-			if !has_key(b:LineJumpCharacterDict,c)
-				let b:LineJumpCharacterDict[c] = []
+
+			if !has_key(b:LineJumpCharacterDictNormalCase,c)
+				let b:LineJumpCharacterDictNormalCase[c] = []
 			endif
-			call add(b:LineJumpCharacterDict[c],pos_list)
+			call add(b:LineJumpCharacterDictNormalCase[c],pos_list)
+
+			let charLower = tolower(c)
+			if !has_key(b:LineJumpCharacterDictLowerCase,charLower)
+				let b:LineJumpCharacterDictLowerCase[charLower] = []
+			endif
+			call add(b:LineJumpCharacterDictLowerCase[charLower],pos_list)
+
 			"call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
 			call add(hl_coords, '\%' . lineindex . 'l\%' . (pos+1) . 'c')
 		endif
@@ -625,8 +639,9 @@ function! LineJumpSelect(startline, endline, forward)
 		endif
 	endfor
 
+	let b:LineJumpCharacterDict = b:LineJumpCharacterDictNormalCase
 	if g:LineJumpSelectMethod == 1 && len(b:LineJumpCharacterDict) == 1
-		"small optimuse, if only has one character, skip getkey
+		"small optimize, if only has one character, skip getkey
 		let charget =  keys(b:LineJumpCharacterDict)[0]
 	else
 		let target_hl_id = matchadd(s:LineJumpHiGroup, join(hl_coords, '\|'), 100)
@@ -636,14 +651,42 @@ function! LineJumpSelect(startline, endline, forward)
 			while 9
 				let key = getchar()
 				let char = nr2char(key)
-				if g:LineJumpSelectIgnoreCase != 0
+				if g:LineJumpSelectSmartCase != 0
+					"smart case
+					"XXX why below not working!!!!
+					"if match(char, "[A-Z]") != -1
+					if key >= char2nr('A') && key <= char2nr('Z')
+						if has_key(b:LineJumpCharacterDictNormalCase,char)
+							let charget = char
+							break
+						endif
+					endif
+
 					let char = tolower(char)
+					"echo "char " . char
+					if has_key(b:LineJumpCharacterDictLowerCase,char)
+						let b:LineJumpCharacterDict = b:LineJumpCharacterDictLowerCase
+						let charget = char
+						break
+					endif
+				else
+					"ignore case
+					if g:LineJumpSelectIgnoreCase != 0
+						let char = tolower(char)
+						"echo "char " . char
+						if has_key(b:LineJumpCharacterDictLowerCase,char)
+							let b:LineJumpCharacterDict = b:LineJumpCharacterDictLowerCase
+							let charget = char
+							break
+						endif
+					else
+						if has_key(b:LineJumpCharacterDictNormalCase,char)
+							let charget = char
+							break
+						endif
+					endif
 				endif
-				"echo "char " . char
-				if has_key(b:LineJumpCharacterDict,char)
-					let charget = char
-					break
-				endif
+
 				"echo "linejump " . linejump
 			endwhile
 		catch
@@ -670,7 +713,14 @@ function! LineJumpSelect(startline, endline, forward)
 		let newpos = getpos('.')
 		let newpos[2] = matchlinelist[0][1] + 1
 		let newpos[1] = linefound
+		"save old position to jumplist
+		let save_NERDTreeMapMenu = g:NERDTreeMapMenu
+		let g:NERDTreeMapMenu = "M"
+		"execute "normal m'"
 		call setpos('.', newpos)
+		"save new position to jumplist
+		execute "normal m'"
+		let g:NERDTreeMapMenu = save_NERDTreeMapMenu
 		let b:subjump_matchlist = matchlinelist[:]
 		let b:subjump_forward = a:forward
 	endif
