@@ -46,14 +46,14 @@ Here is how it works:
             key to jump to the line
 
 Global option:
-	g:LineJumpSelectIgnoreCase
-		ignore case when select,default is 0, case sensitive
-		set to 1 to ignore case when select.
+    g:LineJumpSelectIgnoreCase
+        ignore case when select,default is 0, case sensitive
+        set to 1 to ignore case when select.
 
-	g:LineJumpSelectSmartCase 
+    g:LineJumpSelectSmartCase 
         enable smart case when select, defualt is 0, disabled,
-		set to 1 to enable smart case when select,
-		if set to 1, this option overides g:LineJumpSelectIgnoreCase
+        set to 1 to enable smart case when select,
+        if set to 1, this option overides g:LineJumpSelectIgnoreCase
 
     g:LineJumpSelectMethod
         define sub select way, default is 0
