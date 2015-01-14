@@ -46,6 +46,10 @@ Here is how it works:
             key to jump to the line
 
 Global option:
+	g:LineJumpSelectSmartCase 
+        enable smart cast, defualt is 0, disabled,
+		this option overides g:LineJumpSelectIgnoreCase
+
     g:LineJumpSelectMethod
         define sub select way, default is 0
         0: sub select by LineJumpSubForward(), LineJumpSubBackward()
