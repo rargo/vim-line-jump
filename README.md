@@ -64,5 +64,5 @@ default is 0, the candidate lines will not be highlighted
 
 
 ### Notes
-The offical version nerdtree has a bug that cann't reflect the new directory content after tab create by press 't', personally I stay in
-the old version ![nerdtree](https://github.com/rargo/nerdtree) 
+The offical version nerdtree has a bug that cann't reflect the new directory content after tab create by press 't', personally I stay with
+the old version [nerdtree](https://github.com/rargo/nerdtree) 
