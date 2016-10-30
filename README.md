@@ -6,6 +6,8 @@ When in Tagbar and NERDTree, It's not convenient jump lines using 'j','k'.
 ### Demo
 ![](assets/vim-line-jump.gif)
 
+vim command squence are "fs" and "fn;;;"
+
 
 ### .vimrc setting
 
