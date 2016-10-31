@@ -8,14 +8,10 @@ When in Tagbar and NERDTree, It's not convenient jump lines using 'j','k'.
 
 vim command squence are "fs" and "fn;;;"
 
-
 ### .vimrc setting
 
     "default g:NERDTreeMapToggleFilters key map is 'f', change it to some key else.
     let g:NERDTreeMapToggleFilters="0"
-
-	"let system change directory follow nerdtree
-	let g:NERDTreeChDirMode=2
 
     "LineJump NERDTree key map
 	augroup LineJumpNerdTree
@@ -64,7 +60,3 @@ only valid when g:LineJumpSelectMethod == 0,
 if it is not 0, when move using ';',',', the candidate lines will be highlighted
 default is 0, the candidate lines will not be highlighted
 
-
-### Notes
-The offical version nerdtree has a bug that cann't reflect the new directory content after tab create by press 't', personally I stay with
-the old version [nerdtree](https://github.com/rargo/nerdtree) 
