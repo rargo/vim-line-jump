@@ -716,10 +716,10 @@ function! LineJumpSelect(startline, endline, forward)
 		"save old position to jumplist
 		let save_NERDTreeMapMenu = g:NERDTreeMapMenu
 		let g:NERDTreeMapMenu = "M"
-		"execute "normal m'"
+		"execute "normal! m'"
 		call setpos('.', newpos)
 		"save new position to jumplist
-		execute "normal m'"
+		execute "normal! m'"
 		let g:NERDTreeMapMenu = save_NERDTreeMapMenu
 		let b:subjump_matchlist = matchlinelist[:]
 		let b:subjump_forward = a:forward
